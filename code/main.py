@@ -38,12 +38,22 @@ inc =InterruptControl(bcc)
 
 async def netease_cloud_music_hot(some,*member):
     send_message = MessageChain.create([Plain(wangyiyun.reping())])
-    if member == ():
+    if member[0] == ():
         await app.sendFriendMessage(some, send_message)
     else:
-        at = MessageChain.create([At(member[0].id)])
+        at = MessageChain.create([At(member[0][0].id)])
         await app.sendGroupMessage(some,MessageChain.join(at,send_message))
 
+async def netease_cloud_music_get(some,rmsg,*member):
+    m = rmsg.split(' ')
+    if len(m) == 2:
+        send_message = MessageChain.create([Xml(wangyiyun.diange(m[1]))])
+    else:
+        MessageChain.create([Plain("您输入的参数有误请使用 点歌 [歌曲名] 来进行点歌")])
+    if member[0] == ():
+        await app.sendFriendMessage(some, send_message)
+    else:
+        await app.sendGroupMessage(some,send_message)
 async def hot_weibo(some,rmsg,*member):
     m = rmsg.split(' ')
     if len(m) == 2:
@@ -64,19 +74,30 @@ async def hot_weibo(some,rmsg,*member):
         send_message = MessageChain.create([Plain('\n{}\n输入 微博热搜 [序号] 来获取访问链接'.format(weibo.reso()[0]))])
     else:
         send_message = MessageChain.create([Plain("你输入的参数有误")])
-    if member == ():
+    if member[0] == ():
         await app.sendFriendMessage(some, send_message)
     else:
-        at = MessageChain.create([At(member[0].id)])
+        at = MessageChain.create([At(member[0][0].id)])
         await app.sendGroupMessage(some,MessageChain.join(at,send_message))
 
 async def Lunar(some,*member):
     send_message = MessageChain.create([Plain(huangli.get())])
-    if member == ():
+    if member[0] == ():
         await app.sendFriendMessage(some,send_message)
     else:
-        at = MessageChain.create([At(member[0].id)])
+        at = MessageChain.create([At(member[0][0].id)])
         await app.sendGroupMessage(some,MessageChain.join(at,send_message))
+
+
+async def judge(msg, some, *member):
+    if msg.startswith("网易云热评") or msg.startswith("网抑云热评"):
+        await netease_cloud_music_hot(some,member)
+    elif msg.startswith("黄历"):
+        await Lunar(some,member)
+    elif msg.startswith("微博热搜"):
+        await hot_weibo(some,msg,member)
+    elif msg.startswith("点歌"):
+        await netease_cloud_music_get(some,msg,member)
 
 async def voice_get(message,member,group,app):   #异步处理silk音频文件
     now_time = time.time()
@@ -95,14 +116,7 @@ async def voice_get(message,member,group,app):   #异步处理silk音频文件
     Mg=str(tenxun_voice.get(Td))
     log.CustomLogger.info(group, "Message:" + Mg)
     #消息判断
-    if ("网易云热评" in Mg):
-        await netease_cloud_music_hot(group,member)
-    elif '微博热搜' in Mg:
-        await hot_weibo(group,Mg,member)
-    else:
-        await app.sendGroupMessage(group,MessageChain.create([
-            Plain(Mg)
-        ]))
+    await judge(Mg,group,member)
 
 #处理好友信息
 @bcc.receiver("FriendMessage")
@@ -111,12 +125,7 @@ async def friend_message_listener(
         friend: Friend,
         message: MessageChain,
 ):
-    if message.asDisplay().startswith("网易云热评") or message.asDisplay().startswith("网抑云热评"): #网易云热评
-        await netease_cloud_music_hot(friend)
-    elif message.asDisplay().startswith("微博热搜"):
-        await hot_weibo(friend,message)
-    elif message.asDisplay().startswith("黄历"):
-        await Lunar(friend)
+    await judge(message.asDisplay(), friend)
 
 #处理群组消息
 @bcc.receiver("GroupMessage")
@@ -125,23 +134,7 @@ async  def group_message_listener(
         app:GraiaMiraiApplication,
         group:Group,member:Member,
 ):
-    if message.asDisplay().startswith("网易云热评") or message.asDisplay().startswith("网抑云热评"):  # 网易云热评
-        await netease_cloud_music_hot(group,member)
-
-    elif message.asDisplay().startswith("点歌"):
-        m = message.asDisplay().split(' ')
-        if len(m) == 2:
-            await app.sendGroupMessage(group,MessageChain.create([
-               Xml(wangyiyun.diange(m[1]))
-            ]))
-        else:
-            await app.sendGroupMessage(group,MessageChain.create([
-                Plain("您输入的参数有误请使用 点歌 [歌曲名] 来进行点歌")
-            ]))
-    elif message.asDisplay().startswith("微博热搜"):
-        await hot_weibo(group, message.asDisplay(),member)
-    elif message.asDisplay().startswith("黄历"):
-       await Lunar(group,member)
+    await judge(message.asDisplay(),group,member)
     if message.has(Voice):
         log.CustomLogger.debug(group,message.get(Voice))
         await voice_get(message,member,group,app)
