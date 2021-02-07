@@ -36,6 +36,48 @@ app = GraiaMiraiApplication(
 )
 inc =InterruptControl(bcc)
 
+async def netease_cloud_music_hot(some,*member):
+    send_message = MessageChain.create([Plain(wangyiyun.reping())])
+    if member == ():
+        await app.sendFriendMessage(some, send_message)
+    else:
+        at = MessageChain.create([At(member[0].id)])
+        await app.sendGroupMessage(some,MessageChain.join(at,send_message))
+
+async def hot_weibo(some,rmsg,*member):
+    m = rmsg.split(' ')
+    if len(m) == 2:
+        serial = int(m[1]) - 1
+        reso_data = weibo.reso()[1]
+        if serial >= len(reso_data):
+            send_message = MessageChain.create([Plain("查找数值不正确,数值应为1~{}".format(len(reso_data)))])
+        else:
+            send_message = MessageChain.create([
+                Plain("序号:{}\n"
+                      "标题:{}\n"
+                      "链接:{}"
+                      .format(
+                    reso_data[serial]['id'] + 1,
+                    reso_data[serial]['name'],
+                    reso_data[serial]['url']))])
+    elif len(m) == 1:
+        send_message = MessageChain.create([Plain('\n{}\n输入 微博热搜 [序号] 来获取访问链接'.format(weibo.reso()[0]))])
+    else:
+        send_message = MessageChain.create([Plain("你输入的参数有误")])
+    if member == ():
+        await app.sendFriendMessage(some, send_message)
+    else:
+        at = MessageChain.create([At(member[0].id)])
+        await app.sendGroupMessage(some,MessageChain.join(at,send_message))
+
+async def Lunar(some,*member):
+    send_message = MessageChain.create([Plain(huangli.get())])
+    if member == ():
+        await app.sendFriendMessage(some,send_message)
+    else:
+        at = MessageChain.create([At(member[0].id)])
+        await app.sendGroupMessage(some,MessageChain.join(at,send_message))
+
 async def voice_get(message,member,group,app):   #异步处理silk音频文件
     now_time = time.time()
     with open('voice/rep/{}-{}-get.silk'.format(member.id,now_time), 'wb') as v:
@@ -54,9 +96,9 @@ async def voice_get(message,member,group,app):   #异步处理silk音频文件
     log.CustomLogger.info(group, "Message:" + Mg)
     #消息判断
     if ("网易云热评" in Mg):
-        await  app.sendGroupMessage(group, MessageChain.create([
-            At(member.id), Plain(wangyiyun.reping())
-        ]))
+        await netease_cloud_music_hot(group,member)
+    elif '微博热搜' in Mg:
+        await hot_weibo(group,Mg,member)
     else:
         await app.sendGroupMessage(group,MessageChain.create([
             Plain(Mg)
@@ -70,43 +112,11 @@ async def friend_message_listener(
         message: MessageChain,
 ):
     if message.asDisplay().startswith("网易云热评") or message.asDisplay().startswith("网抑云热评"): #网易云热评
-        await app.sendFriendMessage(friend, MessageChain.create([
-            Plain(wangyiyun.reping())
-        ]))
+        await netease_cloud_music_hot(friend)
     elif message.asDisplay().startswith("微博热搜"):
-        m = message.asDisplay().split(' ')
-        if len(m) == 2:
-            serial = int(m[1])-1
-            log.CustomLogger.info(friend,"微博序号：{}]".format(serial))
-            reso_data = weibo.reso()[1]
-            if serial >= len(reso_data):
-                await app.sendFriendMessage(friend,MessageChain.create([
-                    Plain("查找数值不正确,数值应为1~{}".format(len(reso_data)))
-                ]))
-            else:
-                await app.sendFriendMessage(friend,MessageChain.create([
-                    Plain("\n序号:{}\n标题:{}\n链接:{}".format(reso_data[serial]['id']+1,reso_data[serial]['name'],reso_data[serial]['url']))
-                ]))
-        elif len(m)== 1:
-            await app.sendFriendMessage(friend,MessageChain.create([
-                Plain('\n{}\n输入 微博热搜 [序号] 来获取访问链接'.format(weibo.reso()[0]))
-            ]))
-        else:
-            await app.sendFriendMessage(friend,MessageChain.create(
-                Plain("你输入的参数有误"))
-            )
+        await hot_weibo(friend,message)
     elif message.asDisplay().startswith("黄历"):
-        await app.sendFriendMessage(friend, MessageChain.create([
-            Plain('\n{}'.format(huangli.get()))
-        ]))
-    elif message.asDisplay().startswith("pic_test"):
-        await app.sendFriendMessage(friend, MessageChain.create([
-            Image.fromLocalFile("picture/test.jpg")
-        ]))
-    elif message.has(Image):
-        log.CustomLogger.debug(friend,message.get(Image))
-        with open('test.jpg','wb') as f:
-            f.write(await Image.http_to_bytes(message.get(Image)[0]))
+        await Lunar(friend)
 
 #处理群组消息
 @bcc.receiver("GroupMessage")
@@ -116,9 +126,8 @@ async  def group_message_listener(
         group:Group,member:Member,
 ):
     if message.asDisplay().startswith("网易云热评") or message.asDisplay().startswith("网抑云热评"):  # 网易云热评
-        await  app.sendGroupMessage(group,MessageChain.create([
-            At(member.id),Plain(wangyiyun.reping())
-        ]))
+        await netease_cloud_music_hot(group,member)
+
     elif message.asDisplay().startswith("点歌"):
         m = message.asDisplay().split(' ')
         if len(m) == 2:
@@ -130,44 +139,12 @@ async  def group_message_listener(
                 Plain("您输入的参数有误请使用 点歌 [歌曲名] 来进行点歌")
             ]))
     elif message.asDisplay().startswith("微博热搜"):
-        m = message.asDisplay().split(' ')
-        if len(m) == 2:
-            serial = int(m[1])-1
-            log.CustomLogger.info(group,"微博序号：{}]".format(serial))
-            reso_data = weibo.reso()[1]
-            if serial >= len(reso_data):
-                await app.sendGroupMessage(group,MessageChain.create([
-                    At(member.id), Plain("查找数值不正确,数值应为1~{}".format(len(reso_data)))
-                ]))
-            else:
-                await app.sendGroupMessage(group,MessageChain.create([
-                    At(member.id),Plain("\n序号:{}\n标题:{}\n链接:{}".format(reso_data[serial]['id']+1,reso_data[serial]['name'],reso_data[serial]['url']))
-                ]))
-        elif len(m)== 1:
-            await app.sendGroupMessage(group,MessageChain.create([
-                At(member.id),Plain('\n{}\n输入 微博热搜 [序号] 来获取访问链接'.format(weibo.reso()[0]))
-            ]))
-        else:
-            await app.sendGroupMessage(group,MessageChain.create(
-                At(member.id,Plain("你输入的参数有误"))
-            ))
+        await hot_weibo(group, message.asDisplay(),member)
     elif message.asDisplay().startswith("黄历"):
-        await app.sendGroupMessage(group, MessageChain.create([
-            At(member.id), Plain('\n{}'.format(huangli.get()))
-        ]))
-    elif message.asDisplay().startswith("voice_test"):
-        try:
-            await  app.sendGroupMessage(group,MessageChain.create([
-                Voice.fromLocalFile(group.id,'voice/test.mp3')
-            ]))
-        except:
-           log.CustomLogger.error(group,"voice test has error")
-
+       await Lunar(group,member)
     if message.has(Voice):
         log.CustomLogger.debug(group,message.get(Voice))
         await voice_get(message,member,group,app)
-
-
 
 
 app.launch_blocking()

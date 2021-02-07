@@ -60,7 +60,9 @@ def get(Taskid):
         if(resp['Data']['StatusStr'] == "success"):
             if (resp['Data']['Result']):
                 #print(resp['Data']['Result'])
-                return resp['Data']['Result']
+                resp_e = resp['Data']['Result'].split(' ')[-1]
+
+                return resp_e
             else:
                 return "什么都没有听到呢"
         else:
