@@ -16,6 +16,7 @@ import time
 import os
 import tenxun_voice
 import huangli
+import Tao
 
 config = configparser.ConfigParser() # ini类实例化
 loop = asyncio.get_event_loop()
@@ -88,6 +89,10 @@ async def Lunar(some,*member):
         at = MessageChain.create([At(member[0][0].id)])
         await app.sendGroupMessage(some,MessageChain.join(at,send_message))
 
+async def chat(msg,some,*member):
+    send_message = MessageChain.create([Plain(Tao.skype_chat(msg))])
+    if member[0] != ():
+        await app.sendGroupMessage(some,send_message)
 
 async def judge(msg, some, *member):
     if msg.startswith("网易云热评") or msg.startswith("网抑云热评"):
@@ -98,6 +103,8 @@ async def judge(msg, some, *member):
         await hot_weibo(some,msg,member)
     elif msg.startswith("点歌"):
         await netease_cloud_music_get(some,msg,member)
+    else:
+        await chat(msg,some,member)
 
 async def voice_get(message,member,group,app):   #异步处理silk音频文件
     now_time = time.time()
