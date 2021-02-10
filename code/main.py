@@ -132,7 +132,9 @@ async def friend_message_listener(
         friend: Friend,
         message: MessageChain,
 ):
-    await judge(message.asDisplay(), friend)
+    msg = message.asDisplay()
+    if msg.startswith("#"):
+        await judge(msg[1:], friend)
 
 #处理群组消息
 @bcc.receiver("GroupMessage")
@@ -141,7 +143,9 @@ async  def group_message_listener(
         app:GraiaMiraiApplication,
         group:Group,member:Member,
 ):
-    await judge(message.asDisplay(),group,member)
+    msg = message.asDisplay()
+    if msg.startswith("#"):
+        await judge(msg[1:],group,member)
     if message.has(Voice):
         log.CustomLogger.debug(group,message.get(Voice))
         await voice_get(message,member,group,app)
