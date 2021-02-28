@@ -4,6 +4,8 @@
 
 ------
 
+![目前指针简单捏的洮洮](https://cdn.jsdelivr.net/gh/zzzzz167/blog_data@master/img/Tao/tao.jpeg)
+
 姬缃核（洮洮），是一个由一群~~lsp~~创造出来的极其可~~冲~~爱的女高中生形象
 
 该名字来源于《西游记》第五回 乱蟠桃大圣偷丹 反天宫诸神捉怪 
